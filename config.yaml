@@ -4,6 +4,7 @@ location: "norwayeast"
 
 network:
   vnet_name: "petclinic-vnet"
+  vnet_address: "10.0.0.0/16"
   subnets:
     frontend: { name: "public-sn", address: "10.0.1.0/24" }
     backend: { name: "private-sn", address: "10.0.2.0/24" }
