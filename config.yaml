@@ -1,0 +1,28 @@
+deployment_name: "standard-configuration"
+resource_group: "petclinic-rg"
+location: "norwayeast"
+
+network:
+  vnet_name: "petclinic-vnet"
+  subnets:
+    frontend: { name: "public-sn", address: "10.0.1.0/24" }
+    backend: { name: "private-sn", address: "10.0.2.0/24" }
+
+nodes:
+  - name: "vm-mysql"
+    subnet: "private-sn"
+    components: ["mysql"]
+    size: "Standard_B1s"
+
+  - name: "vm-backend"
+    subnet: "private-sn"
+    components: ["java", "spring-rest"]
+    size: "Standard_B1s"
+    port: 9966
+
+  - name: "vm-frontend"
+    subnet: "frontend-sn"
+    components: ["nginx", "angular"]
+    size: "Standard_B1s"
+    public_ip: true
+    port: 80
