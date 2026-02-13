@@ -6,8 +6,31 @@ network:
   vnet_name: "petclinic-vnet"
   vnet_address: "10.0.0.0/16"
   subnets:
-    frontend: { name: "public-sn", address: "10.0.1.0/24" }
-    backend: { name: "private-sn", address: "10.0.2.0/24" }
+    frontend-sn:
+      name: "frontend-subnet"
+      address: "10.0.1.0/24"
+      nsg_name: "frontend-nsg"
+      rules:
+        - name: "AllowHTTP"
+          priority: 100
+          port: "80"
+          protocol: "Tcp"
+          access: "Allow"
+    backend-sn:
+      name: "backend-subnet"
+      address: "10.0.2.0/24"
+      nsg_name: "backend-nsg"
+      rules:
+        - name: "AllowMySQL"
+          priority: 100
+          port: "3306"
+          protocol: "Tcp"
+          access: "Allow"
+        - name: "AllowSpring"
+          priority: 110
+          port: "9966"
+          protocol: "Tcp"
+          access: "Allow"
 
 nodes:
   - name: "vm-mysql"
