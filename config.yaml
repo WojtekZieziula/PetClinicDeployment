@@ -1,6 +1,6 @@
 deployment_name: "standard-configuration"
 resource_group: "petclinic-rg"
-location: "norwayeast"
+location: "westeurope"
 
 network:
   vnet_name: "petclinic-vnet"
@@ -32,21 +32,25 @@ network:
           protocol: "Tcp"
           access: "Allow"
 
-nodes:
-  - name: "vm-mysql"
-    subnet: "private-sn"
-    components: ["mysql"]
-    size: "Standard_B1s"
-
-  - name: "vm-backend"
-    subnet: "private-sn"
-    components: ["java", "spring-rest"]
-    size: "Standard_B1s"
-    port: 9966
-
-  - name: "vm-frontend"
+compute:
+  db_vm:
+    name: "petclinic-db-vm"
+    size: "Standard_F1als_v7"
+    image: "Ubuntu2204"
+    admin_username: "azureuser"
+    subnet: "backend-sn"
+    public_ip: ""
+  backend_vm:
+    name: "petclinic-backend-vm"
+    size: "Standard_F1als_v7"
+    image: "Ubuntu2204"
+    admin_username: "azureuser"
+    subnet: "backend-sn"
+    public_ip: ""
+  frontend_vm:
+    name: "petclinic-frontend-vm"
+    size: "Standard_F1als_v7"
+    image: "Ubuntu2204"
+    admin_username: "azureuser"
     subnet: "frontend-sn"
-    components: ["nginx", "angular"]
-    size: "Standard_B1s"
-    public_ip: true
-    port: 80
+    public_ip: "petclinic-frontend-ip"

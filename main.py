@@ -1,6 +1,10 @@
 import argparse
 from config_manager import load_configuration, validate_config
-from infrastructure import provision_resource_group, provision_network, provision_nsgs
+from infrastructure import (
+    create_resource_group,
+    create_network_stack,
+    create_vms
+)
 from azure_engine import set_logging_level
 from utils import BOLD, RESET
 
@@ -16,9 +20,9 @@ def main() -> None:
 
     print(f"{BOLD}=== PET CLINIC DEPLOYMENT ==={RESET}\n")
 
-    provision_resource_group(config)
-    provision_network(config)
-    provision_nsgs(config)
+    create_resource_group(config)
+    create_network_stack(config)
+    create_vms(config)
 
     print(f"\n{BOLD}=== DEPLOYMENT COMPLETED SUCCESSFULLY ==={RESET}")
 
