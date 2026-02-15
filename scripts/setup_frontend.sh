@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 BACKEND_HOST=$1
 BACKEND_PORT=${2:-9966}
 export DEBIAN_FRONTEND=noninteractive
@@ -8,7 +9,7 @@ curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
 sudo apt-get install -y nodejs nginx git
 sudo npm install -g @angular/cli
 
-cd /home/azureuser
+cd "$HOME"
 git clone https://github.com/spring-petclinic/spring-petclinic-angular.git
 cd spring-petclinic-angular
 

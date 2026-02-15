@@ -46,6 +46,10 @@ network:
           protocol: "Tcp"
           access: "Allow"
 
+database:
+  user: "petclinic"
+  password: "petclinic"
+
 compute:
   db_vm:
     name: "petclinic-db-vm"

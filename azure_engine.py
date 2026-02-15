@@ -5,11 +5,13 @@ from typing import List
 from utils import GREEN, RED, CYAN, RESET, BOLD
 
 _VERBOSE: bool = False
+_LOG_DIR: str = "logs"
 
-def set_logging_level(verbose: bool) -> None:
-    """Sets the global verbosity for Azure CLI output."""
-    global _VERBOSE
+def set_logging_level(verbose: bool, log_dir: str) -> None:
+    """Sets the global verbosity and log directory for Azure CLI output."""
+    global _VERBOSE, _LOG_DIR
     _VERBOSE = verbose
+    _LOG_DIR = log_dir
 
 def run_az_command(command: List[str]) -> str:
     """
@@ -26,8 +28,7 @@ def run_az_command(command: List[str]) -> str:
         bufsize=1
     )
 
-    os.makedirs("logs", exist_ok=True)
-    log_path = os.path.join("logs", "azure.log")
+    log_path = os.path.join(_LOG_DIR, "azure.log")
 
     full_output: List[str] = []
     if process.stdout:

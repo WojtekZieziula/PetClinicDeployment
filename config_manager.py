@@ -22,7 +22,7 @@ def validate_config(config: Dict[str, Any]) -> None:
     Validates the configuration dictionary.
     Returns None, as it either passes or exits the script.
     """
-    required_keys: List[str] = ['resource_group', 'location', 'network']
+    required_keys: List[str] = ['resource_group', 'location', 'network', 'database']
     for key in required_keys:
         if key not in config:
             print(f"{RED}[ERROR]{RESET} Missing required key '{key}' in config.yaml")

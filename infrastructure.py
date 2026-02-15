@@ -110,7 +110,7 @@ def wait_for_ssh(host: str, timeout: int = 300, interval: int = 5) -> None:
     sys.exit(1)
 
 
-def run_ssh_script(script_path: str, target_host: str, user: str, params: Optional[List[str]] = None, jump_host: Optional[str] = None, verbose: bool = False) -> None:
+def run_ssh_script(script_path: str, target_host: str, user: str, params: Optional[List[str]] = None, jump_host: Optional[str] = None, verbose: bool = False, log_dir: str = "logs") -> None:
     print(f"\n{CYAN}{BOLD}Executing {script_path} on {user}@{target_host}...{RESET}")
 
     ssh_flags = ["-o", "StrictHostKeyChecking=no", "-o", "UserKnownHostsFile=/dev/null"]
@@ -129,9 +129,8 @@ def run_ssh_script(script_path: str, target_host: str, user: str, params: Option
     with open(script_path, "r") as f:
         script_content = f.read()
 
-    os.makedirs("logs", exist_ok=True)
     log_filename = os.path.basename(script_path).replace(".sh", ".log")
-    log_path = os.path.join("logs", log_filename)
+    log_path = os.path.join(log_dir, log_filename)
 
     process = subprocess.Popen(ssh_cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
     process.stdin.write(script_content)

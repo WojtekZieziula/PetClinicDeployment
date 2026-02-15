@@ -1,5 +1,8 @@
 #!/bin/bash
+set -euo pipefail
 DATABASE_PORT=${1:-3306}
+DB_USER=${2:-petclinic}
+DB_PASS=${3:-petclinic}
 export DEBIAN_FRONTEND=noninteractive
 
 echo "[DATABASE] Starting configuration on port $DATABASE_PORT..."
@@ -13,8 +16,8 @@ sudo systemctl restart mysql
 
 sudo mysql -u root <<MYSQL_SCRIPT
 CREATE DATABASE IF NOT EXISTS petclinic;
-CREATE USER IF NOT EXISTS 'petclinic'@'%' IDENTIFIED BY 'petclinic';
-GRANT ALL PRIVILEGES ON petclinic.* TO 'petclinic'@'%';
+CREATE USER IF NOT EXISTS '${DB_USER}'@'%' IDENTIFIED BY '${DB_PASS}';
+GRANT ALL PRIVILEGES ON petclinic.* TO '${DB_USER}'@'%';
 FLUSH PRIVILEGES;
 MYSQL_SCRIPT
 
