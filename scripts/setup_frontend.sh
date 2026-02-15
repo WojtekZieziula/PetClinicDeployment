@@ -33,7 +33,18 @@ server {
 }
 EOF
 
-sudo ln -s /etc/nginx/sites-available/petclinic.conf /etc/nginx/sites-enabled/
+sudo ln -sf /etc/nginx/sites-available/petclinic.conf /etc/nginx/sites-enabled/
 sudo rm -f /etc/nginx/sites-enabled/default
+sudo nginx -t
 sudo systemctl restart nginx
-echo "[FRONTEND] Nginx configured."
+
+echo "[FRONTEND] Verifying Nginx is responding..."
+for i in $(seq 1 10); do
+    if curl -sf -o /dev/null http://localhost/petclinic/; then
+        echo "[FRONTEND] Nginx is up and serving /petclinic/."
+        exit 0
+    fi
+    sleep 2
+done
+echo "[FRONTEND] ERROR: Nginx did not respond within 20 seconds."
+exit 1

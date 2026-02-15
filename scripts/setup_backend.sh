@@ -42,4 +42,18 @@ EOF
 sudo systemctl daemon-reload
 sudo systemctl enable petclinic-backend
 sudo systemctl start petclinic-backend
-echo "[BACKEND] Service started on port $APP_PORT."
+
+echo "[BACKEND] Waiting for service to start on port $APP_PORT..."
+for i in $(seq 1 30); do
+    if ss -tlnp | grep -q ":${APP_PORT}"; then
+        echo "[BACKEND] Service is up and listening on port $APP_PORT."
+        exit 0
+    fi
+    if ! systemctl is-active --quiet petclinic-backend; then
+        echo "[BACKEND] ERROR: Service crashed. Check: journalctl -u petclinic-backend"
+        exit 1
+    fi
+    sleep 5
+done
+echo "[BACKEND] ERROR: Service did not start listening within 150 seconds."
+exit 1

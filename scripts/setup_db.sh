@@ -21,4 +21,13 @@ GRANT ALL PRIVILEGES ON petclinic.* TO '${DB_USER}'@'%';
 FLUSH PRIVILEGES;
 MYSQL_SCRIPT
 
-echo "[DATABASE] Configuration completed."
+echo "[DATABASE] Verifying MySQL is accepting connections..."
+for i in $(seq 1 10); do
+    if mysqladmin ping -h 127.0.0.1 -P "$DATABASE_PORT" --silent 2>/dev/null; then
+        echo "[DATABASE] MySQL is up and accepting connections."
+        exit 0
+    fi
+    sleep 2
+done
+echo "[DATABASE] ERROR: MySQL did not start within 20 seconds."
+exit 1
