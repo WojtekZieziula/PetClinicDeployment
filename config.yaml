@@ -1,4 +1,3 @@
-deployment_name: "standard-configuration"
 resource_group: "petclinic-rg"
 location: "westeurope"
 
@@ -14,6 +13,13 @@ network:
         - name: "AllowHTTP"
           priority: 100
           port: "80"
+          source: "*"
+          protocol: "Tcp"
+          access: "Allow"
+        - name: "AllowSSH"
+          priority: 110
+          port: "22"
+          source: "*"
           protocol: "Tcp"
           access: "Allow"
     backend-sn:
@@ -24,11 +30,19 @@ network:
         - name: "AllowMySQL"
           priority: 100
           port: "3306"
+          source: "VirtualNetwork"
           protocol: "Tcp"
           access: "Allow"
         - name: "AllowSpring"
           priority: 110
           port: "9966"
+          source: "VirtualNetwork"
+          protocol: "Tcp"
+          access: "Allow"
+        - name: "AllowSSHInternal"
+          priority: 120
+          port: "22"
+          source: "VirtualNetwork"
           protocol: "Tcp"
           access: "Allow"
 
@@ -49,7 +63,7 @@ compute:
     public_ip: ""
   frontend_vm:
     name: "petclinic-frontend-vm"
-    size: "Standard_F1als_v7"
+    size: "Standard_F2als_v7"
     image: "Ubuntu2204"
     admin_username: "azureuser"
     subnet: "frontend-sn"
