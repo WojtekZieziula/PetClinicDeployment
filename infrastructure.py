@@ -1,5 +1,9 @@
-import json
-from typing import Dict, List, Any
+import os
+import socket
+import subprocess
+import sys
+import time
+from typing import Dict, List, Any, Optional
 from azure_engine import run_az_command
 from utils import BOLD, RESET, CYAN, GREEN, RED
 
@@ -44,6 +48,8 @@ def create_network_stack(config: Dict[str, Any]) -> None:
 
 def create_vms(config: Dict[str, Any]) -> None:
     print(f"\n{BOLD}--- CREATING VMS ---{RESET}")
+    processes: Dict[str, subprocess.Popen] = {}
+
     for vm_key, vm_data in config['compute'].items():
         sn_info = config['network']['subnets'][vm_data['subnet']]
         cmd = [
@@ -65,7 +71,18 @@ def create_vms(config: Dict[str, Any]) -> None:
         else:
             cmd.extend(["--public-ip-address", ""])
 
-        run_az_command(cmd)
+        print(f"{CYAN}{BOLD}[STARTING]{RESET} {vm_data['name']}")
+        processes[vm_data['name']] = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+
+    print(f"\n{CYAN}Waiting for all VMs to be created...{RESET}")
+    for name, process in processes.items():
+        _, stderr = process.communicate()
+        if process.returncode != 0:
+            print(f"{RED}{BOLD}[FAILED]{RESET} {name}: {stderr.strip()}")
+            sys.exit(1)
+        print(f"{GREEN}{BOLD}[SUCCESS]{RESET} {name} created.")
+
+    print(f"{CYAN}{'-' * 45}{RESET}")
 
 def get_deployment_report(config: Dict[str, Any]) -> Dict[str, Dict[str, str]]:
     print(f"\n{BOLD}--- GATHERING IP ADDRESSES ---{RESET}")
@@ -78,12 +95,59 @@ def get_deployment_report(config: Dict[str, Any]) -> Dict[str, Dict[str, str]]:
             report[name]['public'] = run_az_command(["az", "vm", "list-ip-addresses", "-g", config['resource_group'], "-n", name, "--query", "[0].virtualMachine.network.publicIpAddresses[0].ipAddress", "-o", "tsv"]).strip()
     return report
 
-def run_config_script(config: Dict[str, Any], vm_name: str, script_path: str, params: List[str] = None) -> None:
-    print(f"\n{CYAN}{BOLD}Executing {script_path} on {vm_name}...{RESET}")
-    cmd = ["az", "vm", "run-command", "invoke", "-g", config['resource_group'], "-n", vm_name, "--command-id", "RunShellScript", "--scripts", f"@{script_path}"]
-    if params: cmd.extend(["--parameters"] + params)
-    raw_output = run_az_command(cmd)
-    try:
-        logs = json.loads(raw_output).get('value', [{}])[0].get('message', 'No logs found.')
-        print(f"\n{GREEN}{BOLD}--- BASH LOGS FROM {vm_name} ---{RESET}\n{logs}\n{GREEN}{BOLD}--- END ---{RESET}")
-    except: print(f"{RED}Failed to parse logs for {vm_name}{RESET}")
+def wait_for_ssh(host: str, timeout: int = 300, interval: int = 5) -> None:
+    print(f"\n{CYAN}Waiting for SSH on {host}...{RESET}")
+    start = time.time()
+    while time.time() - start < timeout:
+        try:
+            sock = socket.create_connection((host, 22), timeout=5)
+            sock.close()
+            print(f"{GREEN}SSH ready on {host}{RESET}")
+            return
+        except (socket.timeout, ConnectionRefusedError, OSError):
+            time.sleep(interval)
+    print(f"{RED}SSH timeout after {timeout}s for {host}{RESET}")
+    sys.exit(1)
+
+
+def run_ssh_script(script_path: str, target_host: str, user: str, params: Optional[List[str]] = None, jump_host: Optional[str] = None, verbose: bool = False) -> None:
+    print(f"\n{CYAN}{BOLD}Executing {script_path} on {user}@{target_host}...{RESET}")
+
+    ssh_flags = ["-o", "StrictHostKeyChecking=no", "-o", "UserKnownHostsFile=/dev/null"]
+    ssh_cmd = ["ssh"] + ssh_flags
+
+    if jump_host:
+        ssh_cmd += ["-J", f"{user}@{jump_host}"]
+
+    ssh_cmd.append(f"{user}@{target_host}")
+
+    remote_cmd = "bash -s"
+    if params:
+        remote_cmd += " " + " ".join(params)
+    ssh_cmd.append(remote_cmd)
+
+    with open(script_path, "r") as f:
+        script_content = f.read()
+
+    os.makedirs("logs", exist_ok=True)
+    log_filename = os.path.basename(script_path).replace(".sh", ".log")
+    log_path = os.path.join("logs", log_filename)
+
+    process = subprocess.Popen(ssh_cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+    process.stdin.write(script_content)
+    process.stdin.close()
+
+    with open(log_path, "w") as log_file:
+        for line in process.stdout:
+            log_file.write(line)
+            if verbose:
+                print(line, end="")
+
+    process.wait()
+    if process.returncode != 0:
+        print(f"{RED}{BOLD}Script {script_path} failed on {target_host} (exit code {process.returncode}){RESET}")
+        print(f"Logs saved to {log_path}")
+        sys.exit(1)
+
+    print(f"{GREEN}{BOLD}Script {script_path} completed on {target_host}{RESET}")
+    print(f"Logs saved to {log_path}")

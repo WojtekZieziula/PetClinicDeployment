@@ -1,14 +1,15 @@
+import os
 import subprocess
 import sys
 from typing import List
 from utils import GREEN, RED, CYAN, RESET, BOLD
 
-_SHOW_JSON: bool = False
+_VERBOSE: bool = False
 
-def set_logging_level(show_json: bool) -> None:
-    """Sets the global visibility for Azure JSON responses."""
-    global _SHOW_JSON
-    _SHOW_JSON = show_json
+def set_logging_level(verbose: bool) -> None:
+    """Sets the global verbosity for Azure CLI output."""
+    global _VERBOSE
+    _VERBOSE = verbose
 
 def run_az_command(command: List[str]) -> str:
     """
@@ -25,16 +26,22 @@ def run_az_command(command: List[str]) -> str:
         bufsize=1
     )
 
+    os.makedirs("logs", exist_ok=True)
+    log_path = os.path.join("logs", "azure.log")
+
     full_output: List[str] = []
     if process.stdout:
-        for line in process.stdout:
-            clean_line = line.strip()
-            if clean_line:
-                if _SHOW_JSON:
-                    print(f"  {clean_line}")
-                full_output.append(clean_line)
+        with open(log_path, "a") as log_file:
+            log_file.write(f"--- {cmd_str} ---\n")
+            for line in process.stdout:
+                clean_line = line.strip()
+                if clean_line:
+                    log_file.write(clean_line + "\n")
+                    if _VERBOSE:
+                        print(f"  {clean_line}")
+                    full_output.append(clean_line)
 
-    stdout_rem, stderr = process.communicate()
+    _, stderr = process.communicate()
 
     if process.returncode != 0:
         print(f"{RED}{BOLD}[PHASE FAILED]{RESET}")
