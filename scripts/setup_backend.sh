@@ -5,6 +5,7 @@ DB_PORT=${2:-3306}
 APP_PORT=${3:-9966}
 DB_USER=${4:-petclinic}
 DB_PASS=${5:-petclinic}
+DB_NAME=${6:-petclinic}
 export DEBIAN_FRONTEND=noninteractive
 
 echo "[BACKEND] Installing Java 17, Git and Maven..."
@@ -30,7 +31,7 @@ WorkingDirectory=$HOME/spring-petclinic-rest
 ExecStart=/usr/bin/java -jar $HOME/spring-petclinic-rest/$JAR_FILE \
     --server.port=${APP_PORT} \
     --spring.profiles.active=mysql,spring-data-jpa \
-    --spring.datasource.url=jdbc:mysql://${DB_HOST}:${DB_PORT}/petclinic \
+    --spring.datasource.url=jdbc:mysql://${DB_HOST}:${DB_PORT}/${DB_NAME} \
     --spring.datasource.username=${DB_USER} \
     --spring.datasource.password=${DB_PASS}
 Restart=always
