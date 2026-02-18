@@ -2,6 +2,7 @@
 set -euo pipefail
 BACKEND_HOST=$1
 BACKEND_PORT=${2:-9966}
+LISTEN_PORT=${3:-80}
 export DEBIAN_FRONTEND=noninteractive
 
 echo "[FRONTEND] Installing Node.js and Nginx..."
@@ -22,7 +23,7 @@ sudo cp -r dist/* /var/www/petclinic/
 
 sudo tee /etc/nginx/sites-available/petclinic.conf > /dev/null <<EOF
 server {
-    listen 80;
+    listen ${LISTEN_PORT};
     location /petclinic/ {
         alias /var/www/petclinic/;
         try_files \$uri \$uri/ /petclinic/index.html;
@@ -40,7 +41,7 @@ sudo systemctl restart nginx
 
 echo "[FRONTEND] Verifying Nginx is responding..."
 for i in $(seq 1 10); do
-    if curl -sf -o /dev/null http://localhost/petclinic/; then
+    if curl -sf -o /dev/null http://localhost:${LISTEN_PORT}/petclinic/; then
         echo "[FRONTEND] Nginx is up and serving /petclinic/."
         exit 0
     fi
