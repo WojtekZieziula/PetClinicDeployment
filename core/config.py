@@ -25,9 +25,10 @@ def _check_keys(data: dict[str, Any], keys: list[str], context: str) -> None:
 
 def validate_config(config: dict[str, Any]) -> None:
     """Validates the configuration dictionary."""
-    _check_keys(config, ["resource_group", "location", "network", "database", "compute"], "config.yaml")
+    _check_keys(config, ["resource_group", "location", "network", "database", "key_vault", "compute"], "config.yaml")
     _check_keys(config["network"], ["vnet_name", "vnet_address", "subnets"], "config.yaml -> network")
-    _check_keys(config["database"], ["user", "password"], "config.yaml -> database")
+    _check_keys(config["database"], ["name", "port", "user", "password"], "config.yaml -> database")
+    _check_keys(config["key_vault"], ["name"], "config.yaml -> key_vault")
 
     subnet_names = set(config["network"]["subnets"].keys())
 

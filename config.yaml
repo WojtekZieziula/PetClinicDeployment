@@ -48,8 +48,12 @@ network:
 
 database:
   port: 3306
+  name: "petclinic"
   user: "petclinic"
   password: "petclinic"
+
+key_vault:
+  name: "petclinic-kv"
 
 compute:
   db_vm:

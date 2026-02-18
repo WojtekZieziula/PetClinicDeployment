@@ -1,8 +1,5 @@
-import os
-import socket
 import subprocess
 import sys
-import time
 from typing import Any
 
 from core.azure import run_az_command
@@ -13,6 +10,35 @@ from core.utils import BOLD, CYAN, GREEN, RED, RESET
 def create_resource_group(config: dict[str, Any], ctx: DeployContext) -> None:
     print(f"{BOLD}--- CREATING RESOURCE GROUP ---{RESET}")
     run_az_command(["az", "group", "create", "--name", config["resource_group"], "--location", config["location"]], ctx)
+
+
+def create_key_vault(config: dict[str, Any], ctx: DeployContext) -> None:
+    print(f"\n{BOLD}--- CREATING KEY VAULT ---{RESET}")
+    run_az_command([
+        "az", "keyvault", "create",
+        "--name", config["key_vault"]["name"],
+        "-g", config["resource_group"],
+        "-l", config["location"],
+    ], ctx)
+
+
+def store_secret(vault_name: str, name: str, value: str, ctx: DeployContext) -> None:
+    print(f"{CYAN}Storing secret '{name}' in Key Vault '{vault_name}'...{RESET}")
+    run_az_command([
+        "az", "keyvault", "secret", "set",
+        "--vault-name", vault_name,
+        "--name", name, "--value", value,
+    ], ctx)
+
+
+def get_secret(vault_name: str, name: str, ctx: DeployContext) -> str:
+    print(f"{CYAN}Retrieving secret '{name}' from Key Vault '{vault_name}'...{RESET}")
+    return run_az_command([
+        "az", "keyvault", "secret", "show",
+        "--vault-name", vault_name,
+        "--name", name,
+        "--query", "value", "-o", "tsv",
+    ], ctx).strip()
 
 
 def create_network_stack(config: dict[str, Any], ctx: DeployContext) -> None:
@@ -114,67 +140,14 @@ def get_deployment_report(config: dict[str, Any], ctx: DeployContext) -> dict[st
     return report
 
 
-def wait_for_ssh(host: str, timeout: int = 300, interval: int = 5) -> None:
-    print(f"\n{CYAN}Waiting for SSH on {host}...{RESET}")
-    start = time.time()
-    while time.time() - start < timeout:
-        try:
-            sock = socket.create_connection((host, 22), timeout=5)
-            sock.close()
-            print(f"{GREEN}SSH ready on {host}{RESET}")
-            return
-        except (TimeoutError, ConnectionRefusedError, OSError):
-            time.sleep(interval)
-    print(f"{RED}SSH timeout after {timeout}s for {host}{RESET}")
-    sys.exit(1)
+def provision_infrastructure(config: dict[str, Any], ctx: DeployContext) -> dict[str, dict[str, str]]:
+    create_resource_group(config, ctx)
 
+    kv_name = config["key_vault"]["name"]
+    create_key_vault(config, ctx)
+    store_secret(kv_name, "db-password", config["database"]["password"], ctx)
 
-def run_ssh_script(
-    script_path: str,
-    target_host: str,
-    user: str,
-    ctx: DeployContext,
-    params: list[str] | None = None,
-    jump_host: str | None = None,
-) -> None:
-    print(f"\n{CYAN}{BOLD}Executing {script_path} on {user}@{target_host}...{RESET}")
+    create_network_stack(config, ctx)
+    create_vms(config)
 
-    ssh_flags = ["-o", "StrictHostKeyChecking=no", "-o", "UserKnownHostsFile=/dev/null"]
-    ssh_cmd = ["ssh", *ssh_flags]
-
-    if jump_host:
-        ssh_cmd += ["-J", f"{user}@{jump_host}"]
-
-    ssh_cmd.append(f"{user}@{target_host}")
-
-    remote_cmd = "bash -s"
-    if params:
-        remote_cmd += " " + " ".join(params)
-    ssh_cmd.append(remote_cmd)
-
-    with open(script_path) as f:
-        script_content = f.read()
-
-    log_filename = os.path.basename(script_path).replace(".sh", ".log")
-    log_path = os.path.join(ctx.log_dir, log_filename)
-
-    process = subprocess.Popen(
-        ssh_cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True
-    )
-    process.stdin.write(script_content)
-    process.stdin.close()
-
-    with open(log_path, "w") as log_file:
-        for line in process.stdout:
-            log_file.write(line)
-            if ctx.verbose:
-                print(line, end="")
-
-    process.wait()
-    if process.returncode != 0:
-        print(f"{RED}{BOLD}Script {script_path} failed on {target_host} (exit code {process.returncode}){RESET}")
-        print(f"Logs saved to {log_path}")
-        sys.exit(1)
-
-    print(f"{GREEN}{BOLD}Script {script_path} completed on {target_host}{RESET}")
-    print(f"Logs saved to {log_path}")
+    return get_deployment_report(config, ctx)

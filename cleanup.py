@@ -8,6 +8,7 @@ from core.utils import BOLD, RED, RESET, YELLOW
 def main() -> None:
     config = load_configuration("config.yaml")
     rg_name: str = config["resource_group"]
+    kv_name: str = config["key_vault"]["name"]
 
     print(f"{RED}{BOLD}--- AZURE RESOURCE CLEANUP ---{RESET}")
     print(f"{YELLOW}This will delete the entire Resource Group: {BOLD}{rg_name}{RESET}")
@@ -21,6 +22,9 @@ def main() -> None:
     print(f"\n{BOLD}Deleting resources...{RESET}")
 
     run_az_command(["az", "group", "delete", "--name", rg_name, "--yes", "--no-wait"])
+
+    print(f"{BOLD}Purging Key Vault '{kv_name}' (soft-delete)...{RESET}")
+    run_az_command(["az", "keyvault", "purge", "--name", kv_name, "--no-wait"])
 
     print(f"\n{RED}{BOLD}Resource Group '{rg_name}' has been scheduled for deletion.{RESET}")
     print(f"{RED}It may take a few minutes to fully disappear from the portal.{RESET}")
