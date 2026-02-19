@@ -1,5 +1,6 @@
 import subprocess
 import sys
+import time
 from typing import Any
 
 from core.azure import run_az_command
@@ -20,6 +21,43 @@ def create_key_vault(config: dict[str, Any], ctx: DeployContext) -> None:
         "-g", config["resource_group"],
         "-l", config["location"],
     ], ctx)
+
+
+def assign_keyvault_role(config: dict[str, Any], ctx: DeployContext) -> None:
+    print(f"\n{BOLD}--- ASSIGNING KEY VAULT ROLE ---{RESET}")
+    oid = run_az_command(["az", "ad", "signed-in-user", "show", "--query", "id", "-o", "tsv"], ctx).strip()
+    sub_id = run_az_command(["az", "account", "show", "--query", "id", "-o", "tsv"], ctx).strip()
+
+    kv_name = config["key_vault"]["name"]
+    rg = config["resource_group"]
+    scope = f"/subscriptions/{sub_id}/resourceGroups/{rg}/providers/Microsoft.KeyVault/vaults/{kv_name}"
+
+    run_az_command([
+        "az", "role", "assignment", "create",
+        "--role", "Key Vault Secrets Officer",
+        "--assignee-object-id", oid,
+        "--assignee-principal-type", "User",
+        "--scope", scope,
+    ], ctx)
+
+
+def wait_for_keyvault_access(vault_name: str, max_wait: int = 180) -> None:
+    """Polls Key Vault until RBAC role assignment propagates."""
+    print(f"{CYAN}Waiting for RBAC propagation (up to {max_wait}s)...{RESET}")
+    elapsed = 0
+    while elapsed < max_wait:
+        result = subprocess.run(
+            ["az", "keyvault", "secret", "list", "--vault-name", vault_name, "--query", "[]", "-o", "tsv"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        if result.returncode == 0:
+            print(f"{GREEN}[OK]{RESET} Key Vault access confirmed after {elapsed}s.")
+            return
+        time.sleep(15)
+        elapsed += 15
+        print(f"{CYAN}  Still waiting... ({elapsed}s){RESET}")
+    print(f"{RED}[WARNING]{RESET} Propagation timeout — proceeding anyway.")
 
 
 def store_secret(vault_name: str, name: str, value: str, ctx: DeployContext) -> None:
@@ -145,6 +183,8 @@ def provision_infrastructure(config: dict[str, Any], ctx: DeployContext) -> dict
 
     kv_name = config["key_vault"]["name"]
     create_key_vault(config, ctx)
+    assign_keyvault_role(config, ctx)
+    wait_for_keyvault_access(kv_name)
     store_secret(kv_name, "db-password", config["database"]["password"], ctx)
 
     create_network_stack(config, ctx)
