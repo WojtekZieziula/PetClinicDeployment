@@ -21,9 +21,12 @@ def main() -> None:
 
     print(f"\n{BOLD}Deleting resources...{RESET}")
 
+    print(f"{BOLD}Soft-deleting Key Vault '{kv_name}'...{RESET}")
+    run_az_command(["az", "keyvault", "delete", "--name", kv_name, "--resource-group", rg_name])
+
     run_az_command(["az", "group", "delete", "--name", rg_name, "--yes", "--no-wait"])
 
-    print(f"{BOLD}Purging Key Vault '{kv_name}' (soft-delete)...{RESET}")
+    print(f"{BOLD}Purging Key Vault '{kv_name}'...{RESET}")
     run_az_command(["az", "keyvault", "purge", "--name", kv_name, "--no-wait"])
 
     print(f"\n{RED}{BOLD}Resource Group '{rg_name}' has been scheduled for deletion.{RESET}")
