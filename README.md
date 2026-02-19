@@ -1,6 +1,6 @@
 # PetClinic Azure Deployment
 
-Fully automated deployment of a **3-tier web application** on Microsoft Azure. A single Python command provisions the complete cloud infrastructure from scratch &mdash; virtual network with isolated subnets, security groups, three Linux VMs &mdash; and deploys the entire application stack: Angular frontend behind Nginx reverse proxy, Spring Boot REST API, and MySQL database.
+Fully automated deployment of a **3-tier web application** on Microsoft Azure. A single Python command provisions the complete cloud infrastructure from scratch (virtual network with isolated subnets, security groups, three Linux VMs) and deploys the entire application stack: Angular frontend behind Nginx reverse proxy, Spring Boot REST API, and MySQL database.
 
 ## Quick Start
 
@@ -74,14 +74,14 @@ graph TD
 
 ## Key Features
 
-- **Infrastructure as Code** &mdash; entire cloud environment defined declaratively in `config.yaml`
-- **Secret management** &mdash; database password stored in Azure Key Vault instead of plaintext
-- **Network security** &mdash; backend and database VMs have no public IPs; all provisioning goes through an SSH jump host; NSG rules follow least-privilege principle
-- **Parallel provisioning** &mdash; all 3 VMs are created simultaneously to minimize deployment time
-- **Health checks** &mdash; each service (MySQL, Spring Boot, Nginx) is verified before proceeding to the next step
-- **End-to-end verification** &mdash; automated post-deployment test confirms the full stack (frontend &rarr; backend &rarr; DB) is responding
-- **Idempotent teardown** &mdash; `cleanup.py` removes all resources including Key Vault purge
-- **Structured logging** &mdash; timestamped logs for every Azure CLI call and SSH session
+- **Infrastructure as Code** - entire cloud environment defined declaratively in `config.yaml`
+- **Secret management** - database password stored in Azure Key Vault instead of plaintext
+- **Network security** - backend and database VMs have no public IPs; all provisioning goes through an SSH jump host; NSG rules follow least-privilege principle
+- **Parallel provisioning** - all 3 VMs are created simultaneously to minimize deployment time
+- **Health checks** - each service (MySQL, Spring Boot, Nginx) is verified before proceeding to the next step
+- **End-to-end verification** - automated post-deployment test confirms the full stack (frontend &rarr; backend &rarr; DB) is responding
+- **Idempotent teardown** - `cleanup.py` removes all resources including Key Vault purge
+- **Structured logging** - timestamped logs for every Azure CLI call and SSH session
 
 ## Network Security
 
@@ -117,10 +117,10 @@ PetClinicDeployment/
 
 ## Configuration
 
-All infrastructure parameters are defined in `config.yaml` &mdash; VM sizes, network addressing, subnet layout, NSG rules, database credentials, and Key Vault name. No values are hardcoded in the Python source.
+All infrastructure parameters are defined in `config.yaml` - VM sizes, network addressing, subnet layout, NSG rules, database credentials, and Key Vault name. No values are hardcoded in the Python source.
 
 ## Logs
 
 Each deployment run creates a timestamped directory under `logs/` containing:
-- `azure.log` &mdash; all Azure CLI command outputs
-- `setup_db.log`, `setup_backend.log`, `setup_frontend.log` &mdash; SSH script outputs
+- `azure.log` - all Azure CLI command outputs
+- `setup_db.log`, `setup_backend.log`, `setup_frontend.log` - SSH script outputs
